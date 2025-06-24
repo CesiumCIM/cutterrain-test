@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>Cesium 3D Tiles with Terrain Toggle & Polyline</title>
+  <title>Cesium 簡単ポリライン＆地形ON/OFF</title>
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.89/Build/Cesium/Cesium.js"></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.89/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
   <style>
@@ -19,17 +19,16 @@
 <body>
   <div id="cesiumContainer"></div>
   <button id="toggleTerrainBtn">地球儀 OFF</button>
+
   <script>
     Cesium.Ion.defaultAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJhZDE3MjMyZi01MThlLTQxOGQtOTM4ZC1iYjBlODFiMGM2Y2UiLCJpZCI6MjQ1NzQ4LCJpYXQiOjE3Mjc5NzY3ODJ9.pNoxj3_erzKOuSjKyj2A_LQXESK_jk9hg692mvX_3G0";
 
-    // ビューア初期化（地形ON）
     let terrainEnabled = true;
-    let terrainProvider = Cesium.createWorldTerrain();
     const viewer = new Cesium.Viewer("cesiumContainer", {
-      terrainProvider: terrainProvider,
+      terrainProvider: Cesium.createWorldTerrain(),
       timeline: false,
       animation: false,
-      baseLayerPicker: false
+      baseLayerPicker: false,
     });
 
     // 3Dタイル読み込み
@@ -55,7 +54,6 @@
     });
 
     // ポリライン描画用変数
-    let activeLine = null;
     let activeLinePositions = [];
     let polylineEntity = null;
 
@@ -66,13 +64,10 @@
 
       activeLinePositions.push(cartesian);
 
-      // 既存のポリライン削除
       if (polylineEntity) {
         viewer.entities.remove(polylineEntity);
-        polylineEntity = null;
       }
 
-      // 新規ポリライン作成
       polylineEntity = viewer.entities.add({
         polyline: {
           positions: activeLinePositions,
