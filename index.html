@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Cesium - XY平面断面化（右側残す）</title>
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.89/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.89/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
+  <style>
+    html, body, #cesiumContainer {
+      margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+    }
+    #toggleTerrainBtn {
+      position: absolute; top: 10px; left: 10px; z-index: 100;
+      padding: 8px 12px; font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+  <button id="toggleTerrainBtn">地球儀 ON/OFF</button>
+  <script>
+    Cesium.Ion.defaultAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJhZDE3MjMyZi01MThlLTQxOGQtOTM4ZC1iYjBlODFiMGM2Y2UiLCJpZCI6MjQ1NzQ4LCJpYXQiOjE3Mjc5NzY3ODJ9.pNoxj3_erzKOuSjKyj2A_LQXESK_jk9hg692mvX_3G0";
+
+    let terrainProvider = Cesium.createWorldTerrain();
+    const viewer = new Cesium.Viewer("cesiumContainer", {
+      terrainProvider: terrainProvider,
+      timeline: false,
+      animation: false
+    });
+
+    let terrainEnabled = true;
+    const terrainButton = document.getElementById("toggleTerrainBtn");
+    terrainButton.addEventListener("click", () => {
+      viewer.terrainProvider = terrainEnabled ? new Cesium.EllipsoidTerrainProvider() : Cesium.createWorldTerrain();
+      terrainEnabled = !terrainEnabled;
+      terrainButton.textContent = terrainEnabled ? "地球儀 OFF" : "地球儀 ON";
+    });
+
+    let tileset;
+    Cesium.IonResource.fromAssetId(3308455).then(resource => {
+      tileset = viewer.scene.primitives.add(new Cesium.Cesium3DTileset({ url: resource }));
+      tileset.readyPromise.then(() => viewer.zoomTo(tileset));
+    });
+
+    // 線引き処理
+    let drawing = false;
+    let startScreenPos = null;
+    let handler = new Cesium.ScreenSpaceEventHandler(viewer.canvas);
+
+    handler.setInputAction((click) => {
+      startScreenPos = click.position;
+      drawing = true;
+    }, Cesium.ScreenSpaceEventType.LEFT_DOWN);
+
+    handler.setInputAction((click) => {
+      if (!drawing) return;
+      const endScreenPos = click.position;
+      drawing = false;
+
+      const startCarto = viewer.scene.globe.pick(viewer.camera.getPickRay(startScreenPos), viewer.scene);
+      const endCarto = viewer.scene.globe.pick(viewer.camera.getPickRay(endScreenPos), viewer.scene);
+      if (!startCarto || !endCarto) return;
+
+      const start = Cesium.Cartographic.toCartesian(Cesium.Cartographic.fromCartesian(startCarto));
+      const end = Cesium.Cartographic.toCartesian(Cesium.Cartographic.fromCartesian(endCarto));
+
+      // ベクトル計算
+      const dir = Cesium.Cartesian3.subtract(end, start, new Cesium.Cartesian3());
+      const normal2D = new Cesium.Cartesian3(-dir.y, dir.x, 0); // XY平面で法線取得
+      Cesium.Cartesian3.normalize(normal2D, normal2D);
+
+      const midPoint = Cesium.Cartesian3.midpoint(start, end, new Cesium.Cartesian3());
+      const distance = -Cesium.Cartesian3.dot(normal2D, midPoint); // 平面距離（反転で右側残す）
+
+      const planes = new Cesium.ClippingPlaneCollection({
+        planes: [new Cesium.ClippingPlane(normal2D, distance)],
+        edgeWidth: 2.0,
+        edgeColor: Cesium.Color.YELLOW
+      });
+
+      if (tileset) tileset.clippingPlanes = planes;
+    }, Cesium.ScreenSpaceEventType.LEFT_UP);
+
+    // ESCで線解除＆断面クリア
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && tileset) {
+        tileset.clippingPlanes = undefined;
+        drawing = false;
+      }
+    });
+  </script>
+</body>
+</html>
