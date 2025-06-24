@@ -2,57 +2,93 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>Cesium 基本表示 + 地球儀ON/OFF</title>
+  <title>Cesium 3D Tiles with Terrain Toggle and Z-Clipping</title>
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.89/Build/Cesium/Cesium.js"></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.89/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
   <style>
     html, body, #cesiumContainer {
-      margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+      margin:0; padding:0; width:100%; height:100%; overflow:hidden;
     }
     #toggleTerrainBtn {
-      position: absolute;
-      top: 10px; left: 10px; z-index: 10;
-      background-color: #fff; padding: 5px 10px;
+      position: absolute; top: 10px; left: 10px; z-index: 100;
+      padding: 8px 12px; font-size: 14px;
+    }
+    #info {
+      position: absolute; top: 45px; left: 10px; z-index: 100; color: white; background: rgba(0,0,0,0.5); padding: 5px;
+      font-size: 13px;
     }
   </style>
 </head>
 <body>
   <div id="cesiumContainer"></div>
   <button id="toggleTerrainBtn">地球儀 OFF</button>
+  <div id="info">ESCで線クリア（線は現状なし）</div>
 
   <script>
-    // アクセストークン設定
     Cesium.Ion.defaultAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJhZDE3MjMyZi01MThlLTQxOGQtOTM4ZC1iYjBlODFiMGM2Y2UiLCJpZCI6MjQ1NzQ4LCJpYXQiOjE3Mjc5NzY3ODJ9.pNoxj3_erzKOuSjKyj2A_LQXESK_jk9hg692mvX_3G0";
 
-    // 地形ONからスタート
-    let terrainEnabled = true;
-    let terrainProvider = Cesium.createWorldTerrain();
-
+    // Viewer初期化（地形ON）
     const viewer = new Cesium.Viewer("cesiumContainer", {
-      terrainProvider: terrainProvider,
-      baseLayerPicker: false,
+      terrainProvider: Cesium.createWorldTerrain(),
+      timeline: false,
       animation: false,
-      timeline: false
+      infoBox: false,
+      selectionIndicator: false,
     });
 
-    // タイル表示
-    Cesium.IonResource.fromAssetId(3308455).then(resource => {
-      const tileset = new Cesium.Cesium3DTileset({ url: resource });
-      viewer.scene.primitives.add(tileset);
+    // 地形ON/OFF用
+    let terrainEnabled = true;
+    const terrainBtn = document.getElementById("toggleTerrainBtn");
+    terrainBtn.addEventListener("click", () => {
+      if (terrainEnabled) {
+        viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider();
+        terrainBtn.textContent = "地球儀 ON";
+      } else {
+        viewer.terrainProvider = Cesium.createWorldTerrain();
+        terrainBtn.textContent = "地球儀 OFF";
+      }
+      terrainEnabled = !terrainEnabled;
+    });
+
+    // クリッピングプレーン（Z軸方向）
+    const clippingPlanes = new Cesium.ClippingPlaneCollection({
+      planes: [new Cesium.ClippingPlane(Cesium.Cartesian3.UNIT_Z, 0.0)],
+      edgeWidth: 2.0,
+      edgeColor: Cesium.Color.RED,
+      enabled: true,
+    });
+
+    // 3D Tiles読み込み
+    let tileset;
+    Cesium.IonResource.fromAssetId(3308455).then(function(resource) {
+      tileset = viewer.scene.primitives.add(
+        new Cesium.Cesium3DTileset({
+          url: resource,
+          clippingPlanes: clippingPlanes,
+        })
+      );
 
       tileset.readyPromise.then(() => {
         viewer.zoomTo(tileset);
+        // 初期断面位置をタイルの中心高さに設定
+        const boundingSphere = tileset.boundingSphere;
+        const center = boundingSphere.center;
+        const carto = Cesium.Cartographic.fromCartesian(center);
+        const height = carto.height || 0;
+
+        // Z軸クリップ平面を地形高さ付近に設定
+        clippingPlanes.get(0).distance = height;
       });
     });
 
-    // 地球儀ON/OFFボタン
-    document.getElementById("toggleTerrainBtn").addEventListener("click", function () {
-      terrainEnabled = !terrainEnabled;
-      viewer.terrainProvider = terrainEnabled
-        ? Cesium.createWorldTerrain()
-        : new Cesium.EllipsoidTerrainProvider();
-      this.textContent = terrainEnabled ? "地球儀 OFF" : "地球儀 ON";
+    // キーボード ESC で線クリア（今は線はないが将来対応用）
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        // 今は線なし。将来線クリア処理用に残す。
+        document.getElementById("info").textContent = "ESC押された: 線があればクリア";
+      }
     });
+
   </script>
 </body>
 </html>
