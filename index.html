@@ -2,22 +2,56 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>Cesium Basic Test</title>
+  <title>Cesium 基本表示 + 地球儀ON/OFF</title>
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.89/Build/Cesium/Cesium.js"></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.89/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
   <style>
     html, body, #cesiumContainer {
-      width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;
+      margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+    }
+    #toggleTerrainBtn {
+      position: absolute;
+      top: 10px; left: 10px; z-index: 10;
+      background-color: #fff; padding: 5px 10px;
     }
   </style>
 </head>
 <body>
   <div id="cesiumContainer"></div>
+  <button id="toggleTerrainBtn">地球儀 OFF</button>
+
   <script>
+    // アクセストークン設定
     Cesium.Ion.defaultAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJhZDE3MjMyZi01MThlLTQxOGQtOTM4ZC1iYjBlODFiMGM2Y2UiLCJpZCI6MjQ1NzQ4LCJpYXQiOjE3Mjc5NzY3ODJ9.pNoxj3_erzKOuSjKyj2A_LQXESK_jk9hg692mvX_3G0";
 
-    const viewer = new Cesium.Viewer('cesiumContainer', {
-      terrainProvider: Cesium.createWorldTerrain()
+    // 地形ONからスタート
+    let terrainEnabled = true;
+    let terrainProvider = Cesium.createWorldTerrain();
+
+    const viewer = new Cesium.Viewer("cesiumContainer", {
+      terrainProvider: terrainProvider,
+      baseLayerPicker: false,
+      animation: false,
+      timeline: false
+    });
+
+    // タイル表示
+    Cesium.IonResource.fromAssetId(3308455).then(resource => {
+      const tileset = new Cesium.Cesium3DTileset({ url: resource });
+      viewer.scene.primitives.add(tileset);
+
+      tileset.readyPromise.then(() => {
+        viewer.zoomTo(tileset);
+      });
+    });
+
+    // 地球儀ON/OFFボタン
+    document.getElementById("toggleTerrainBtn").addEventListener("click", function () {
+      terrainEnabled = !terrainEnabled;
+      viewer.terrainProvider = terrainEnabled
+        ? Cesium.createWorldTerrain()
+        : new Cesium.EllipsoidTerrainProvider();
+      this.textContent = terrainEnabled ? "地球儀 OFF" : "地球儀 ON";
     });
   </script>
 </body>
