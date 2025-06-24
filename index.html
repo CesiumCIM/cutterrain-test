@@ -1,65 +1,64 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>Cesium 断面化デモ</title>
-  <script src="https://unpkg.com/cesium@1.89/Build/Cesium/Cesium.js"></script>
-  <link href="https://unpkg.com/cesium@1.89/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <title>Cesium Polyline Clipping Test</title>
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.89/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.89/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
   <style>
-    html, body, #cesiumContainer { margin:0; padding:0; width:100%; height:100%; overflow:hidden; }
-    #toggleBtn { position:absolute; top:10px; left:10px; z-index:100; padding:8px; }
+    html, body, #cesiumContainer {
+      margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+    }
+    #toggleTerrainBtn {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 100;
+      padding: 8px 12px;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
   <div id="cesiumContainer"></div>
-  <button id="toggleBtn">地球儀 OFF</button>
+  <button id="toggleTerrainBtn">地球儀 OFF</button>
+
   <script>
-    Cesium.Ion.defaultAccessToken = 'eyJh...';
+    Cesium.Ion.defaultAccessToken =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJhZDE3MjMyZi01MThlLTQxOGQtOTM4ZC1iYjBlODFiMGM2Y2UiLCJpZCI6MjQ1NzQ4LCJpYXQiOjE3Mjc5NzY3ODJ9.pNoxj3_erzKOuSjKyj2A_LQXESK_jk9hg692mvX_3G0';
+
+    let terrainEnabled = true;
     const viewer = new Cesium.Viewer('cesiumContainer', {
       terrainProvider: Cesium.createWorldTerrain(),
-      timeline: false, animation: false,
-      infoBox: false, selectionIndicator: false
+      animation: false,
+      timeline: false,
     });
 
-    let terrainOn = true;
-    document.getElementById('toggleBtn').onclick = () => {
-      viewer.terrainProvider = terrainOn ? new Cesium.EllipsoidTerrainProvider() : Cesium.createWorldTerrain();
-      terrainOn = !terrainOn;
-      document.getElementById('toggleBtn').textContent = terrainOn ? '地球儀 OFF' : '地球儀 ON';
-    };
+    // 地球儀 ON/OFF 切り替え
+    const terrainBtn = document.getElementById('toggleTerrainBtn');
+    terrainBtn.addEventListener('click', () => {
+      if (terrainEnabled) {
+        viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider();
+        terrainBtn.textContent = '地球儀 ON';
+      } else {
+        viewer.terrainProvider = Cesium.createWorldTerrain();
+        terrainBtn.textContent = '地球儀 OFF';
+      }
+      terrainEnabled = !terrainEnabled;
+    });
 
-    let tileset, clipPlanes;
-    Cesium.IonResource.fromAssetId(3308455).then(res => {
-      clipPlanes = new Cesium.ClippingPlaneCollection({ planes:[], edgeColor: Cesium.Color.RED, edgeWidth: 2 });
-      tileset = new Cesium.Cesium3DTileset({ url: res, clippingPlanes: clipPlanes });
+    // タイル表示
+    Cesium.IonResource.fromAssetId(3308455).then((resource) => {
+      const tileset = new Cesium.Cesium3DTileset({
+        url: resource,
+      });
       viewer.scene.primitives.add(tileset);
-      tileset.readyPromise.then(() => viewer.zoomTo(tileset));
+      tileset.readyPromise.then(() => {
+        viewer.zoomTo(tileset);
+      });
     });
 
-    let startPos, drawing=false;
-    const handler = new Cesium.ScreenSpaceEventHandler(viewer.canvas);
-    handler.setInputAction(c => { startPos = c.position; drawing=true; }, Cesium.ScreenSpaceEventType.LEFT_DOWN);
-    handler.setInputAction(c => {
-      if (!drawing) return;
-      drawing=false;
-      const endPos = c.position;
-      const startCartesian = viewer.scene.globe.pick(viewer.camera.getPickRay(startPos), viewer.scene);
-      const endCartesian = viewer.scene.globe.pick(viewer.camera.getPickRay(endPos), viewer.scene);
-      if (!startCartesian||!endCartesian) return;
-
-      const start = Cesium.Cartographic.toCartesian(Cesium.Cartographic.fromCartesian(startCartesian));
-      const end = Cesium.Cartographic.toCartesian(Cesium.Cartographic.fromCartesian(endCartesian));
-      const dir = Cesium.Cartesian3.normalize(Cesium.Cartesian3.subtract(end,start,new Cesium.Cartesian3()), new Cesium.Cartesian3());
-      const normal2d = Cesium.Cartesian3.normalize(new Cesium.Cartesian3(-dir.y, dir.x, 0), new Cesium.Cartesian3());
-      const distance = -Cesium.Cartesian3.dot(normal2d, start);
-
-      clipPlanes.removeAll();
-      clipPlanes.add(new Cesium.ClippingPlane(normal2d, distance));
-    }, Cesium.ScreenSpaceEventType.LEFT_UP);
-
-    window.addEventListener('keydown', e => {
-      if (e.key === 'Escape') clipPlanes.removeAll();
-    });
+    // 今後ここに「ポリラインで右側を残して断面化する処理」を追加していく
   </script>
 </body>
 </html>
