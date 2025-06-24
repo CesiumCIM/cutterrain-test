@@ -2,91 +2,23 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>Cesium 簡単ポリライン＆地形ON/OFF</title>
+  <title>Cesium Basic Test</title>
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.89/Build/Cesium/Cesium.js"></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.89/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
   <style>
     html, body, #cesiumContainer {
-      margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
-    }
-    #toggleTerrainBtn {
-      position: absolute; top: 10px; left: 10px; z-index: 100;
-      padding: 8px 12px; font-size: 14px;
-      background: white; border: 1px solid #ccc; cursor: pointer;
+      width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;
     }
   </style>
 </head>
 <body>
   <div id="cesiumContainer"></div>
-  <button id="toggleTerrainBtn">地球儀 OFF</button>
-
   <script>
     Cesium.Ion.defaultAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJhZDE3MjMyZi01MThlLTQxOGQtOTM4ZC1iYjBlODFiMGM2Y2UiLCJpZCI6MjQ1NzQ4LCJpYXQiOjE3Mjc5NzY3ODJ9.pNoxj3_erzKOuSjKyj2A_LQXESK_jk9hg692mvX_3G0";
 
-    let terrainEnabled = true;
-    const viewer = new Cesium.Viewer("cesiumContainer", {
-      terrainProvider: Cesium.createWorldTerrain(),
-      timeline: false,
-      animation: false,
-      baseLayerPicker: false,
+    const viewer = new Cesium.Viewer('cesiumContainer', {
+      terrainProvider: Cesium.createWorldTerrain()
     });
-
-    // 3Dタイル読み込み
-    let tileset;
-    Cesium.IonResource.fromAssetId(3308455).then(resource => {
-      tileset = viewer.scene.primitives.add(new Cesium.Cesium3DTileset({ url: resource }));
-      tileset.readyPromise.then(() => {
-        viewer.zoomTo(tileset);
-      });
-    });
-
-    // 地球儀ON/OFFボタン
-    const terrainButton = document.getElementById("toggleTerrainBtn");
-    terrainButton.addEventListener("click", () => {
-      if (terrainEnabled) {
-        viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider();
-        terrainButton.textContent = "地球儀 ON";
-      } else {
-        viewer.terrainProvider = Cesium.createWorldTerrain();
-        terrainButton.textContent = "地球儀 OFF";
-      }
-      terrainEnabled = !terrainEnabled;
-    });
-
-    // ポリライン描画用変数
-    let activeLinePositions = [];
-    let polylineEntity = null;
-
-    // クリックでポリラインの点追加
-    viewer.screenSpaceEventHandler.setInputAction(function (click) {
-      const cartesian = viewer.camera.pickEllipsoid(click.position, viewer.scene.globe.ellipsoid);
-      if (!cartesian) return;
-
-      activeLinePositions.push(cartesian);
-
-      if (polylineEntity) {
-        viewer.entities.remove(polylineEntity);
-      }
-
-      polylineEntity = viewer.entities.add({
-        polyline: {
-          positions: activeLinePositions,
-          width: 3,
-          material: Cesium.Color.RED,
-          clampToGround: true
-        }
-      });
-    }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
-
-    // ESCでポリラインリセット
-    viewer.screenSpaceEventHandler.setInputAction(function () {
-      activeLinePositions = [];
-      if (polylineEntity) {
-        viewer.entities.remove(polylineEntity);
-        polylineEntity = null;
-      }
-    }, Cesium.ScreenSpaceEventType.KEY_DOWN, Cesium.KeyboardEventModifier.NONE);
-
   </script>
 </body>
 </html>
