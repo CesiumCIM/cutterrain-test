@@ -2,53 +2,16 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>Cesium 3D Tiles with Terrain Toggle</title>
+  <title>Cesium Simple Test</title>
   <script src="https://cdn.jsdelivr.net/npm/cesium@1.110/Build/Cesium/Cesium.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/cesium@1.110/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
-  <style>
-    html, body, #cesiumContainer {
-      margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
-    }
-    #toggleTerrainBtn {
-      position: absolute; top: 10px; left: 10px; z-index: 100;
-      padding: 8px 12px; font-size: 14px;
-    }
-  </style>
+  <style>html, body, #cesiumContainer { margin:0; padding:0; width:100%; height:100%; overflow:hidden; }</style>
 </head>
 <body>
   <div id="cesiumContainer"></div>
-  <button id="toggleTerrainBtn">地球儀 ON/OFF</button>
   <script>
-    Cesium.Ion.defaultAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJhZDE3MjMyZi01MThlLTQxOGQtOTM4ZC1iYjBlODFiMGM2Y2UiLCJpZCI6MjQ1NzQ4LCJpYXQiOjE3Mjc5NzY3ODJ9.pNoxj3_erzKOuSjKyj2A_LQXESK_jk9hg692mvX_3G0";
-
-    const viewer = new Cesium.Viewer('cesiumContainer', {
-      terrainProvider: Cesium.WorldTerrain,
-      timeline: false,
-      animation: false
-    });
-
-    async function loadTileset() {
-      const resource = await Cesium.IonResource.fromAssetId(3308455);
-      const tileset = new Cesium.Cesium3DTileset({ url: resource });
-      viewer.scene.primitives.add(tileset);
-      await tileset.readyPromise;
-      viewer.zoomTo(tileset);
-    }
-
-    loadTileset();
-
-    let terrainEnabled = true;
-    const terrainButton = document.getElementById('toggleTerrainBtn');
-    terrainButton.addEventListener('click', () => {
-      if (terrainEnabled) {
-        viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider();
-        terrainButton.textContent = "地球儀 ON";
-      } else {
-        viewer.terrainProvider = Cesium.WorldTerrain;
-        terrainButton.textContent = "地球儀 OFF";
-      }
-      terrainEnabled = !terrainEnabled;
-    });
+    Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJhZDE3MjMyZi01MThlLTQxOGQtOTM4ZC1iYjBlODFiMGM2Y2UiLCJpZCI6MjQ1NzQ4LCJpYXQiOjE3Mjc5NzY3ODJ9.pNoxj3_erzKOuSjKyj2A_LQXESK_jk9hg692mvX_3G0';
+    const viewer = new Cesium.Viewer('cesiumContainer');
   </script>
 </body>
 </html>
