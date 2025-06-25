@@ -2,88 +2,52 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>Cesium 3D Tiles with Clipping Box</title>
-  <script src="https://cesium.com/downloads/cesiumjs/releases/1.89/Build/Cesium/Cesium.js"></script>
-  <link href="https://cesium.com/downloads/cesiumjs/releases/1.89/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <title>Cesium 3D Tiles with Terrain Toggle</title>
+  <script src="https://cdn.jsdelivr.net/npm/cesium@1.110/Build/Cesium/Cesium.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/cesium@1.110/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
   <style>
     html, body, #cesiumContainer {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
+      margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
     }
     #toggleTerrainBtn {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      z-index: 100;
-      padding: 8px 12px;
-      font-size: 14px;
+      position: absolute; top: 10px; left: 10px; z-index: 100;
+      padding: 8px 12px; font-size: 14px;
     }
   </style>
 </head>
 <body>
   <div id="cesiumContainer"></div>
   <button id="toggleTerrainBtn">地球儀 ON/OFF</button>
-
   <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      Cesium.Ion.defaultAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJhZDE3MjMyZi01MThlLTQxOGQtOTM4ZC1iYjBlODFiMGM2Y2UiLCJpZCI6MjQ1NzQ4LCJpYXQiOjE3Mjc5NzY3ODJ9.pNoxj3_erzKOuSjKyj2A_LQXESK_jk9hg692mvX_3G0";
+    Cesium.Ion.defaultAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJhZDE3MjMyZi01MThlLTQxOGQtOTM4ZC1iYjBlODFiMGM2Y2UiLCJpZCI6MjQ1NzQ4LCJpYXQiOjE3Mjc5NzY3ODJ9.pNoxj3_erzKOuSjKyj2A_LQXESK_jk9hg692mvX_3G0";
 
-      let terrainProvider = Cesium.createWorldTerrain();
-      const viewer = new Cesium.Viewer("cesiumContainer", {
-        terrainProvider: terrainProvider,
-        timeline: false,
-        animation: false
-      });
+    const viewer = new Cesium.Viewer('cesiumContainer', {
+      terrainProvider: Cesium.WorldTerrain,
+      timeline: false,
+      animation: false
+    });
 
-      Cesium.IonResource.fromAssetId(3308455).then(function (resource) {
-        const tileset = viewer.scene.primitives.add(new Cesium.Cesium3DTileset({
-          url: resource
-        }));
+    async function loadTileset() {
+      const resource = await Cesium.IonResource.fromAssetId(3308455);
+      const tileset = new Cesium.Cesium3DTileset({ url: resource });
+      viewer.scene.primitives.add(tileset);
+      await tileset.readyPromise;
+      viewer.zoomTo(tileset);
+    }
 
-        tileset.readyPromise.then(function () {
-          viewer.zoomTo(tileset);
+    loadTileset();
 
-          const center = tileset.boundingSphere.center;
-          const modelMatrix = Cesium.Transforms.eastNorthUpToFixedFrame(center);
-
-          const halfX = 25.0;
-          const halfY = 25.0;
-          const halfZ = 25.0;
-
-          const clippingPlanes = new Cesium.ClippingPlaneCollection({
-            planes: [
-              new Cesium.ClippingPlane(new Cesium.Cartesian3( 1,  0,  0),  halfX),
-              new Cesium.ClippingPlane(new Cesium.Cartesian3(-1,  0,  0),  halfX),
-              new Cesium.ClippingPlane(new Cesium.Cartesian3( 0,  1,  0),  halfY),
-              new Cesium.ClippingPlane(new Cesium.Cartesian3( 0, -1,  0),  halfY),
-              new Cesium.ClippingPlane(new Cesium.Cartesian3( 0,  0,  1),  halfZ),
-              new Cesium.ClippingPlane(new Cesium.Cartesian3( 0,  0, -1),  halfZ)
-            ],
-            modelMatrix: modelMatrix,
-            edgeWidth: 2.0,
-            edgeColor: Cesium.Color.RED,
-            unionClippingRegions: true
-          });
-
-          tileset.clippingPlanes = clippingPlanes;
-        });
-      });
-
-      let terrainEnabled = true;
-      const terrainButton = document.getElementById("toggleTerrainBtn");
-      terrainButton.addEventListener("click", function () {
-        if (terrainEnabled) {
-          viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider();
-          terrainButton.textContent = "地球儀 ON";
-        } else {
-          viewer.terrainProvider = Cesium.createWorldTerrain();
-          terrainButton.textContent = "地球儀 OFF";
-        }
-        terrainEnabled = !terrainEnabled;
-      });
+    let terrainEnabled = true;
+    const terrainButton = document.getElementById('toggleTerrainBtn');
+    terrainButton.addEventListener('click', () => {
+      if (terrainEnabled) {
+        viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider();
+        terrainButton.textContent = "地球儀 ON";
+      } else {
+        viewer.terrainProvider = Cesium.WorldTerrain;
+        terrainButton.textContent = "地球儀 OFF";
+      }
+      terrainEnabled = !terrainEnabled;
     });
   </script>
 </body>
